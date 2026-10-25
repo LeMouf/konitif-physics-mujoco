@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   publish:
-    if: github.repository == 'LeMouf/konitif-physics-mujoco' && vars.MUJOCO_NPM_PUBLISH_ENABLED == 'true'
+    if: github.repository == 'LeMouf/konitif-physics-mujoco' && vars.PHYSICS_MUJOCO_NPM_PUBLISH_ENABLED == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     environment: npm-release

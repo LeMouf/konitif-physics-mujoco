@@ -8,7 +8,7 @@ const json = path => JSON.parse(readFileSync(new URL(`../${path}`, import.meta.u
 test('release identity names the independent repository', () => {
   const manifest = json('package.json');
   assert.equal(manifest.repository.url, 'git+https://github.com/LeMouf/konitif-physics-mujoco.git');
-  assert.equal(manifest.version, '0.1.0');
+  assert.equal(manifest.version, '0.1.1');
   assert.equal(manifest.license, 'PolyForm-Noncommercial-1.0.0');
 });
 
@@ -18,7 +18,7 @@ test('release inputs bind the exact package version to its repository and tag re
   const lock = json('package-lock.json');
   const base = {
     GITHUB_REPOSITORY: 'LeMouf/konitif-physics-mujoco',
-    GITHUB_REF: 'refs/tags/v0.1.0',
+    GITHUB_REF: 'refs/tags/v0.1.1',
   };
   assert.doesNotThrow(() => assertReleaseInputs(policy, manifest, lock, {
     ...base,
@@ -27,7 +27,7 @@ test('release inputs bind the exact package version to its repository and tag re
   assert.doesNotThrow(() => assertReleaseInputs(policy, manifest, lock, {
     ...base,
     GITHUB_EVENT_NAME: 'workflow_dispatch',
-    MUJOCO_RELEASE_TAG: 'v0.1.0',
+    MUJOCO_RELEASE_TAG: 'v0.1.1',
   }));
   assert.throws(() => assertReleaseInputs(policy, manifest, lock, {
     ...base,
@@ -38,7 +38,7 @@ test('release inputs bind the exact package version to its repository and tag re
     ...base,
     GITHUB_EVENT_NAME: 'workflow_dispatch',
     GITHUB_REF: 'refs/heads/main',
-    MUJOCO_RELEASE_TAG: 'v0.1.0',
+    MUJOCO_RELEASE_TAG: 'v0.1.1',
   }));
 });
 
@@ -52,7 +52,7 @@ test('the publish workflow is the only constrained publication authority', () =>
   const workflow = readFileSync(new URL('../.github/workflows/publish.yml', import.meta.url), 'utf8');
   assert.match(workflow, /tags: \['v\*'\]/);
   assert.match(workflow, /workflow_dispatch:/);
-  assert.match(workflow, /vars\.MUJOCO_NPM_PUBLISH_ENABLED == 'true'/);
+  assert.match(workflow, /vars\.PHYSICS_MUJOCO_NPM_PUBLISH_ENABLED == 'true'/);
   assert.match(workflow, /github\.repository == 'LeMouf\/konitif-physics-mujoco'/);
   assert.match(workflow, /environment: npm-release/);
   assert.match(workflow, /id-token: write/);
@@ -73,4 +73,10 @@ test('license notice identifies its own package and preserves the public SPDX li
  const license=readFileSync(new URL('../LICENSE.md',import.meta.url),'utf8');
  assert.ok(license.startsWith('# Licence — '+manifest.name));
  assert.ok(license.includes('SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0'));
+});
+
+test('public narrative stays generic and contains no private product identifiers',()=>{
+ const words=[[110,97,111],[109,97,120,116,114,111,110,105,99,115],[97,108,100,101,98,97,114,97,110],[115,111,102,116,98,97,110,107]].map(value=>String.fromCharCode(...value));
+ const narrative=['README.md','RELEASE.md','AGENTS.md','package.json'].map(path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')).join('\n').toLowerCase();
+ for(const word of words)assert.ok(!new RegExp('\\b'+word+'\\b','i').test(narrative),'Private identifier in public narrative');
 });
