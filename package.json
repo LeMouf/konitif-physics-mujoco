@@ -1,0 +1,40 @@
+{
+  "name": "@konitif/physics-mujoco",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "description": "Optional MuJoCo worker provider for KONITIF Physics; the host explicitly supplies engines and resources.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE.md"
+  ],
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "verify:package": "node scripts/verify-package.mjs"
+  },
+  "dependencies": {
+    "@konitif/physics": "0.285.3"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LeMouf/konitif-physics-mujoco.git"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

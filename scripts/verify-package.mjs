@@ -1,0 +1,33 @@
+import assert from 'node:assert/strict';
+import {execFileSync} from 'node:child_process';
+import {mkdtempSync,readFileSync,mkdirSync,symlinkSync,writeFileSync,cpSync,realpathSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join,dirname,resolve} from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {createHash} from 'node:crypto';
+const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
+const manifest=JSON.parse(readFileSync(join(root,'package.json'),'utf8'));
+assert.equal(manifest.name,'@konitif/physics-mujoco');assert.equal(manifest.version,'0.1.0');
+const dependenciesRoot=realpathSync(process.env.MUJOCO_DEPENDENCY_ROOT||join(root,'node_modules'));
+for(const [name,version] of Object.entries(manifest.dependencies))assert.equal(JSON.parse(readFileSync(join(dependenciesRoot,name,'package.json'),'utf8')).version,version);
+const evidence=mkdtempSync(join(tmpdir(),'konitif-mujoco-package-'));
+const npmCli=join(dirname(process.execPath),'node_modules/npm/bin/npm-cli.js');
+const run=(command,args,cwd=root)=>execFileSync(command,args,{cwd,encoding:'utf8',maxBuffer:16*1024*1024,env:{...process.env,npm_config_offline:'true'}});
+const packArgs=['pack','--offline','--ignore-scripts','--json','--pack-destination',evidence];
+const [packed]=JSON.parse(process.platform==='win32' ? run(process.execPath,[npmCli,...packArgs]) : run('npm',packArgs));
+const files=packed.files.map(f=>f.path).sort();
+const expected=['LICENSE.md','README.md','package.json',...['index', 'createMujocoBackend', 'experimentSimulationSession', 'mujocoExperimentSession', 'mujocoGroundContacts', 'mujocoInitOptions', 'mujocoPhysicsWorker', 'mujocoStepScheduler', 'mujocoSupportFloor', 'mujocoWorkerSourceMetadata'].flatMap(n=>[`dist/${n}.js`,`dist/${n}.d.ts`])].sort();
+assert.deepEqual(files,expected);
+assert.ok(files.every(file=>!/(?:nao|maxtronics|behavior-studio)/i.test(file)), 'Archive must not contain product resources');
+const archive=join(evidence,packed.filename),bytes=readFileSync(archive);
+assert.equal(packed.integrity,'sha512-'+createHash('sha512').update(bytes).digest('base64'));
+const consumer=join(evidence,'consumer'),subject=join(consumer,'node_modules/@konitif/physics-mujoco');mkdirSync(subject,{recursive:true});
+run('tar',['-xzf',archive,'-C',subject,'--strip-components=1']);
+for(const name of Object.keys(manifest.dependencies)){
+ const target=join(consumer,'node_modules',name);mkdirSync(dirname(target),{recursive:true});symlinkSync(join(dependenciesRoot,name),target,'junction');
+}
+cpSync(join(root,'tests'),join(subject,'tests'),{recursive:true});
+writeFileSync(join(evidence,'headless-tests.log'),run(process.execPath,['--test',join(subject,'tests/provider.test.mjs')],consumer));
+writeFileSync(join(consumer,'consumer.mts'),"import {resolveMujocoExperimentTiming,ExperimentSimulationSession} from '@konitif/physics-mujoco';\nresolveMujocoExperimentTiming(1/60,1/240);\nconst inspect=(s:ExperimentSimulationSession<unknown>)=>s.getStatus();void inspect;\n");
+run(process.execPath,[join(dependenciesRoot,'typescript/bin/tsc'),'--noEmit','--strict','--module','NodeNext','--moduleResolution','NodeNext','--target','ES2022',join(consumer,'consumer.mts')],consumer);
+console.log(JSON.stringify({status:'passed',version:manifest.version,archive,bytes:bytes.length,integrity:packed.integrity,sha256:createHash('sha256').update(bytes).digest('hex'),files:files.length,evidence,consumer:'native Node ESM without UI or renderer; strict NodeNext declarations'},null,2));

@@ -1,0 +1,64 @@
+name: Publish @konitif/physics-mujoco
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Exact protected release tag to publish
+        required: true
+        default: v0.1.0
+permissions:
+  contents: read
+concurrency:
+  group: mujoco-npm-publish
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.repository == 'LeMouf/konitif-physics-mujoco' && vars.MUJOCO_NPM_PUBLISH_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: npm-release
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      MUJOCO_RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+    steps:
+      - name: Checkout release authority
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Checkout exact release tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          path: .release-source
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Require exact tag on main history
+        run: |
+          expected="v$(node -p "require('./.release-source/package.json').version")"
+          test "${MUJOCO_RELEASE_TAG}" = "${expected}"
+          test "${GITHUB_REF}" = "refs/tags/${expected}"
+          test "$(git -C .release-source tag --points-at HEAD --list "${expected}")" = "${expected}"
+          git -C .release-source fetch --no-tags origin main:refs/remotes/origin/main
+          git -C .release-source merge-base --is-ancestor HEAD origin/main
+      - run: bash scripts/select-ci-runtime.sh
+      - name: Check preinstalled publishing tools
+        run: >-
+          node --input-type=module -e "import {execFileSync} from 'node:child_process';
+          import {assertPublishingTools} from './scripts/check-release.mjs';
+          assertPublishingTools(process.versions.node, execFileSync('npm',['--version'],{encoding:'utf8'}).trim());"
+      - run: npm --prefix .release-source ci --ignore-scripts --no-audit --no-fund --registry=https://registry.npmjs.org
+      - run: npm --prefix .release-source run build
+      - run: npm --prefix .release-source test
+      - run: node scripts/check-release.mjs
+        env:
+          MUJOCO_RELEASE_ROOT: .release-source
+      - name: Verify exact archive to publish
+        run: node scripts/prepare-release-archive.mjs
+        env:
+          MUJOCO_RELEASE_ROOT: .release-source
+      - name: Publish verified archive through npm OIDC
+        run: npm publish .release/package.tgz --access public --provenance --ignore-scripts --registry=https://registry.npmjs.org
