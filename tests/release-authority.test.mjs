@@ -52,7 +52,7 @@ test('the publish workflow is the only constrained publication authority', () =>
   const workflow = readFileSync(new URL('../.github/workflows/publish.yml', import.meta.url), 'utf8');
   assert.match(workflow, /tags: \['v\*'\]/);
   assert.match(workflow, /workflow_dispatch:/);
-  assert.match(workflow, /vars\.MUJOCO_NPM_PUBLISH_ENABLED == 'true'/);
+  assert.match(workflow, /vars\.PHYSICS_MUJOCO_NPM_PUBLISH_ENABLED == 'true'/);
   assert.match(workflow, /github\.repository == 'LeMouf\/konitif-physics-mujoco'/);
   assert.match(workflow, /environment: npm-release/);
   assert.match(workflow, /id-token: write/);
