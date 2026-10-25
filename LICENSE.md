@@ -1,4 +1,4 @@
-# Licence — @konitif/workbench
+# Licence — @konitif/physics-mujoco
 
 SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 
