@@ -67,3 +67,10 @@ test('the release preparation retains only the archive emitted by the verifier',
   assert.match(script, /COPYFILE_EXCL/);
   assert.doesNotMatch(script, /npm pack|readdirSync/);
 });
+
+test('license notice identifies its own package and preserves the public SPDX license',()=>{
+ const manifest=json('package.json');
+ const license=readFileSync(new URL('../LICENSE.md',import.meta.url),'utf8');
+ assert.ok(license.startsWith('# Licence — '+manifest.name));
+ assert.ok(license.includes('SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0'));
+});
