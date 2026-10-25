@@ -7,7 +7,7 @@ import {fileURLToPath} from 'node:url';
 import {createHash} from 'node:crypto';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const manifest=JSON.parse(readFileSync(join(root,'package.json'),'utf8'));
-assert.equal(manifest.name,'@konitif/physics-mujoco');assert.equal(manifest.version,'0.1.0');
+assert.equal(manifest.name,'@konitif/physics-mujoco');assert.equal(manifest.version,'0.1.1');
 const dependenciesRoot=realpathSync(process.env.MUJOCO_DEPENDENCY_ROOT||join(root,'node_modules'));
 for(const [name,version] of Object.entries(manifest.dependencies))assert.equal(JSON.parse(readFileSync(join(dependenciesRoot,name,'package.json'),'utf8')).version,version);
 const evidence=mkdtempSync(join(tmpdir(),'konitif-mujoco-package-'));

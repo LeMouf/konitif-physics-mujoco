@@ -4,4 +4,4 @@ Optional MuJoCo worker provider implementing @konitif/physics. Physics remains t
 
 The host supplies a compatible MuJoCo module URL, model data and simulation commands. No binary is downloaded or bundled. Importing creates no worker or clock. createMujocoBackend starts the worker explicitly; workerFactory allows host integration. Compositions own histories and the temporal cursor; renderers consume observations.
 
-The distributed worker is a JavaScript ES module. No NAO resources, hardware discovery, robot connection or renderer are included.
+The distributed worker is a JavaScript ES module. Model resources, hardware adapters and renderers are supplied by the host.
